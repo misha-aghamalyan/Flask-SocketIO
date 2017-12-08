@@ -57,6 +57,16 @@ class SocketIO(object):
                            using server-side sessions, a ``False`` setting
                            enables sharing the user session between HTTP routes
                            and Socket.IO events.
+    :param patch_session: If set to ``True``, extension will artificially set
+                           session id cookie, so that when clients not having
+                           cookies can connect normally.
+                           For example it is recommended to set ``True`` if you plan to
+                           have clients link mobile applications.
+                           Note that when this is set to ``True`` different connections
+                           from the same browser won't share the session.
+                           Note: do note user session signer with this parameter
+                           set to ``True``
+                           Default value is ``False``
     :param message_queue: A connection URL for a message queue service the
                           server can use for multi-process communication. A
                           message queue is not required when using a single
@@ -144,6 +154,7 @@ class SocketIO(object):
         self.exception_handlers = {}
         self.default_exception_handler = None
         self.manage_session = True
+        self.patch_session = False
         # We can call init_app when:
         # - we were given the Flask app instance (standard initialization)
         # - we were not given the app, but we were given a message_queue
@@ -609,12 +620,20 @@ class SocketIO(object):
                         dict(flask.session)
                 session_obj = self.server.environ[sid]['saved_session']
             else:
-                # let Flask handle the user session
-                # for cookie based sessions, this effectively freezes the
-                # session to its state at connection time
-                # for server-side sessions, this allows HTTP and Socket.IO to
-                # share the session, with both having read/write access to it
-                session_obj = flask.session._get_current_object()
+                 if self.patch_session:
+                    # Patch cookies so that clients with no cookie support can connect
+                    sess_interface = app.session_interface
+                    flask.request.cookies = {
+                        app.session_cookie_name: flask.request.sid
+                    }
+                    session_obj = sess_interface.open_session(app, flask.request)
+                else:
+                    # let Flask handle the user session
+                    # for cookie based sessions, this effectively freezes the
+                    # session to its state at connection time
+                    # for server-side sessions, this allows HTTP and Socket.IO to
+                    # share the session, with both having read/write access to it
+                    session_obj = flask.session._get_current_object()
             _request_ctx_stack.top.session = session_obj
             flask.request.sid = sid
             flask.request.namespace = namespace
