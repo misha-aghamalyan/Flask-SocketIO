@@ -620,7 +620,7 @@ class SocketIO(object):
                         dict(flask.session)
                 session_obj = self.server.environ[sid]['saved_session']
             else:
-                 if self.patch_session:
+                if self.patch_session:
                     # Patch cookies so that clients with no cookie support can connect
                     sess_interface = app.session_interface
                     flask.request.cookies = {
