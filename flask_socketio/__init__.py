@@ -614,6 +614,9 @@ class SocketIO(object):
             return '', 400
         app = self.server.environ[sid]['flask.app']
         with app.request_context(self.server.environ[sid]):
+            flask.request.sid = sid
+            flask.request.namespace = namespace
+            flask.request.event = {'message': message, 'args': args}
             if self.manage_session:
                 # manage a separate session for this client's Socket.IO events
                 # created as a copy of the regular user session
@@ -637,9 +640,6 @@ class SocketIO(object):
                     # share the session, with both having read/write access to it
                     session_obj = flask.session._get_current_object()
             _request_ctx_stack.top.session = session_obj
-            flask.request.sid = sid
-            flask.request.namespace = namespace
-            flask.request.event = {'message': message, 'args': args}
             try:
                 if message == 'connect':
                     ret = handler()
