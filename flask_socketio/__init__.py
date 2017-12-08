@@ -174,6 +174,8 @@ class SocketIO(object):
         self.server_options.update(kwargs)
         self.manage_session = self.server_options.pop('manage_session',
                                                       self.manage_session)
+        self.patch_session = self.server_options.pop('patch_session',
+                                                     self.patch_session)
 
         if 'client_manager' not in self.server_options:
             url = self.server_options.pop('message_queue', None)
